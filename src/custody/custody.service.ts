@@ -283,7 +283,11 @@ export class CustodyService {
     });
   }
 
-  async cancelCustody(custodyId: string, reason?: string): Promise<CustodyResponseDto> {
+  async cancelCustody(
+    custodyId: string,
+    reason?: string,
+    depositHandling?: 'RETURNED' | 'FORFEITED' | 'PARTIAL',
+  ): Promise<CustodyResponseDto> {
     return this.prisma.$transaction(async (tx) => {
       const custody = await tx.custody.findUnique({
         where: { id: custodyId },
@@ -306,6 +310,8 @@ export class CustodyService {
         include: { holder: true, pet: true },
       });
 
+      const effectiveDepositHandling = depositHandling ?? 'RETURNED';
+
       // Log timeline event with transition details
       await this.eventsService.logEvent({
         entityType: 'CUSTODY',
@@ -318,7 +324,24 @@ export class CustodyService {
           fromStatus: custody.status,
           toStatus: CustodyStatus.CANCELLED,
           reason: reason ?? null,
+          depositHandling: effectiveDepositHandling,
           timestamp: new Date().toISOString(),
+        },
+      });
+
+      // Also log PET_CUSTODY_CANCELLED on PET aggregate for movement timeline
+      await this.eventsService.logEvent({
+        entityType: 'PET',
+        entityId: custody.petId,
+        eventType: 'PET_CUSTODY_CANCELLED',
+        actorId: custody.holderId,
+        payload: {
+          petId: custody.petId,
+          custodianId: custody.holderId,
+          cancelledAt: new Date().toISOString(),
+          cancelledBy: custody.holderId,
+          reason: reason ?? null,
+          depositHandling: effectiveDepositHandling,
         },
       });
 
