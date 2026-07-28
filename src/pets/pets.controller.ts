@@ -24,6 +24,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/guards/roles.decorator';
 import { PetsService } from './pets.service';
+import { PetMovementService } from './services/pet-movement.service';
 import { CreatePetDto } from './dto/create-pet.dto';
 import { UpdatePetDto } from './dto/update-pet.dto';
 import { SearchPetsDto } from './dto/search-pets.dto';
@@ -35,7 +36,10 @@ import { SkipThrottle } from '@nestjs/throttler';
 @ApiTags('Pets')
 @Controller('pets')
 export class PetsController {
-  constructor(private readonly petsService: PetsService) {}
+  constructor(
+    private readonly petsService: PetsService,
+    private readonly petMovementService: PetMovementService,
+  ) {}
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -117,6 +121,40 @@ export class PetsController {
   @ApiResponse({ status: 404, description: 'Pet not found' })
   async getPet(@Param('id') petId: string) {
     return this.petsService.getPetById(petId);
+  }
+
+  @Get(':id/history')
+  @ApiOperation({
+    summary: 'Get pet movement timeline',
+    description:
+      'Returns the complete movement history of a pet — every adoption and custody event in chronological order. Public endpoint (no auth required).',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Pet ID',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Pet movement history',
+    schema: {
+      example: {
+        petId: '550e8400-e29b-41d4-a716-446655440000',
+        petName: 'Buddy',
+        timeline: [
+          {
+            eventType: 'CUSTODY_STARTED',
+            summary: 'Custody started',
+            occurredAt: '2024-01-01T00:00:00.000Z',
+            stellarTxHash: 'stellar-tx-hash-abc',
+            anchorStatus: 'ANCHORED',
+          },
+        ],
+      },
+    },
+  })
+  @ApiResponse({ status: 404, description: 'Pet not found' })
+  async getMovementHistory(@Param('id') petId: string) {
+    return this.petMovementService.getMovementHistory(petId);
   }
 
   @Patch(':id')
