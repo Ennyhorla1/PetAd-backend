@@ -170,5 +170,36 @@ export class PetsController {
   ) {
     return this.petsService.remove(id, req.user.role);
   }
+
+  @Get(':id/availability/verify')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @ApiOperation({
+    summary: 'Verify pet availability via event replay (admin only)',
+    description:
+      'Replays the pet\'s event log to compute availability and compares it against the current DB state. ' +
+      'Returns a discrepancy report if the two differ.',
+  })
+  @ApiParam({ name: 'id', description: 'Pet ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Availability verification result',
+    schema: {
+      example: {
+        petId: '550e8400-e29b-41d4-a716-446655440000',
+        replayedStatus: 'AVAILABLE',
+        dbAvailable: true,
+        isMatch: true,
+        eventCount: 3,
+        message: 'Pet availability is correctly synchronized',
+      },
+    },
+  })
+  @ApiResponse({ status: 403, description: 'Forbidden - Admin only' })
+  @ApiResponse({ status: 404, description: 'Pet not found' })
+  @ApiBearerAuth('JWT-auth')
+  async verifyAvailability(@Param('id') petId: string) {
+    return this.petsService.verifyAvailability(petId);
+  }
 }
 
