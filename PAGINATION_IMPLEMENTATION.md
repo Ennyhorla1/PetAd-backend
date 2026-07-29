@@ -41,9 +41,10 @@ Pagination support has been successfully implemented for the `GET /pets` endpoin
 
 ## 📝 Files Modified
 
+
+
 ### 1. **PetsService** (`src/pets/pets.service.ts`)
 - Added imports for pagination DTOs and Prisma
-- Updated `findAll()` method to:
   - Accept `SearchPetsDto` parameter
   - Build dynamic filters
   - Calculate skip/take for pagination
@@ -51,6 +52,8 @@ Pagination support has been successfully implemented for the `GET /pets` endpoin
   - Return `PaginatedResponseDto<Pet>`
 - **Key Logic:**
   ```typescript
+
+
   const skip = (page - 1) * limit;
   const [data, total] = await Promise.all([
     this.prisma.pet.findMany({ where, skip, take: limit, ... }),

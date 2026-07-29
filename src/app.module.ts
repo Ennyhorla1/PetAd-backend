@@ -18,6 +18,7 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
 import { LoggingInterceptor } from './logging/logging.interceptor';
 import { JobsModule } from './jobs/jobs.module';
+import { AdminModule } from './admin/admin.module';
 import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
 
 
@@ -53,6 +54,7 @@ import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis'
     HealthModule,
     LoggingModule,
     JobsModule,
+    AdminModule,
 
   ],
 
