@@ -1,12 +1,15 @@
 import { Global, Module } from '@nestjs/common';
 import { EventsService } from './events.service';
+import { EventLedgerService } from './event-ledger.service';
+import { EventLedgerController } from './event-ledger.controller';
 import { PrismaModule } from '../prisma/prisma.module';
 
-@Global() // Makes EventsService available application-wide without needing to import EventsModule everywhere
+@Global()
 @Module({
   imports: [PrismaModule],
-  providers: [EventsService],
-  exports: [EventsService], // Export it so other modules can use it
+  controllers: [EventLedgerController],
+  providers: [EventsService, EventLedgerService],
+  exports: [EventsService, EventLedgerService],
 })
 export class EventsModule {}
 
