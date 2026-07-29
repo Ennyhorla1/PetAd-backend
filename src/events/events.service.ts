@@ -13,6 +13,15 @@ export interface CreateEventLogDto {
   metadata?: Prisma.InputJsonValue;
 }
 
+export interface AppendEventDto {
+  aggregateType: EventEntityType | string;
+  aggregateId: string;
+  eventType: EventType | string;
+  actorId?: string;
+  payload: Prisma.InputJsonValue;
+  metadata?: Prisma.InputJsonValue;
+}
+
 export interface EventLedger {
   entityType: EventEntityType | string;
   entityId: string;
@@ -116,9 +125,6 @@ export class EventsService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  /**
-   * Logs a system or user-generated event to the database.
-   */
   async logEvent(dto: CreateEventLogDto) {
     try {
       const event = await this.prisma.eventLog.create({
@@ -147,9 +153,55 @@ export class EventsService {
     }
   }
 
-  /**
-   * Reconstructs an aggregate by applying its ledger events in sequence order.
-   */
+  async appendEvent(dto: AppendEventDto) {
+    const aggregateType = dto.aggregateType as EventEntityType;
+    const eventType = dto.eventType as EventType;
+    const payload = dto.payload as unknown as Record<string, unknown>;
+
+    return this.prisma.$transaction(async (transaction) => {
+      if (
+        String(dto.aggregateType).toUpperCase() === 'ADOPTION' &&
+        String(dto.eventType).toUpperCase() === 'ADOPTION_REQUESTED'
+      ) {
+        const petId = payload.petId;
+        if (typeof petId !== 'string' || petId.length === 0) {
+          throw new Error(
+            'ADOPTION_REQUESTED events require a petId in their payload',
+          );
+        }
+      }
+
+      const event = await transaction.eventLog.create({
+        data: {
+          entityType: aggregateType,
+          entityId: dto.aggregateId,
+          eventType,
+          actorId: dto.actorId,
+          payload: dto.payload,
+          metadata: dto.metadata,
+        },
+      });
+
+      if (
+        String(dto.aggregateType).toUpperCase() === 'ADOPTION' &&
+        String(dto.eventType).toUpperCase() === 'ADOPTION_REQUESTED'
+      ) {
+        await transaction.eventLog.create({
+          data: {
+            entityType: EventEntityType.PET,
+            entityId: payload.petId as string,
+            eventType: 'PET_ADOPTION_REQUESTED' as EventType,
+            actorId: dto.actorId,
+            payload: dto.payload,
+            metadata: dto.metadata,
+          },
+        });
+      }
+
+      return event;
+    });
+  }
+
   async replayAggregate<T extends AggregateState>(
     entityType: EventEntityType,
     entityId: string,
