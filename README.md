@@ -10,6 +10,7 @@ Production-grade NestJS backend for **PetAd** — a blockchain-backed platform e
 
 ---
 
+
 ## 📋 Table of Contents
 
 - [Architecture Overview](#architecture-overview)
