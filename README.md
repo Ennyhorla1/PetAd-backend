@@ -8,7 +8,7 @@
 
 Production-grade NestJS backend for **PetAd** — a blockchain-backed platform enabling secure pet adoption and temporary custody with verifiable on-chain guarantees. Exposes REST APIs for the frontend and orchestrates escrow workflows using the PetAd Stellar SDK.
 
----
+----------
 
 ## 📋 Table of Contents
 
