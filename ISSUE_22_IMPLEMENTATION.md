@@ -313,3 +313,4 @@ The implementation fully satisfies all requirements from issue #22:
 - ✅ API documentation
 
 The code is production-ready and follows all NestJS and project best practices.
+
