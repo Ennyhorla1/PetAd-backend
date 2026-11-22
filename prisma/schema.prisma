@@ -120,6 +120,13 @@ enum LogLevel {
   ERROR
 }
 
+enum AnchorStatus {
+  PENDING
+  SUBMITTED
+  CONFIRMED
+  FAILED
+}
+
 // ─── Models ──────────────────────────────────────────────
 
 model Session {
@@ -332,6 +339,39 @@ model AppLog {
   @@map("app_logs")
 }
 
+model AnchorBatch {
+  id            String       @id @default(uuid())
+  fromPosition  Int          @map("from_position")
+  toPosition    Int          @map("to_position")
+  leafCount     Int          @map("leaf_count")
+  merkleRoot    String       @map("merkle_root")
+  txHash        String?      @map("tx_hash")
+  ledger        BigInt?      @map("ledger")
+  status        AnchorStatus @default(PENDING)
+  submittedAt   DateTime?    @map("submitted_at")
+  confirmedAt   DateTime?    @map("confirmed_at")
+  network       String       @default("STELLAR")
+
+  events        EventLog[]
+  leaves        AnchorLeaf[]
+
+  @@unique([fromPosition, toPosition, network])
+  @@map("anchor_batches")
+}
+
+model AnchorLeaf {
+  id            String      @id @default(uuid())
+  batchId       String      @map("batch_id")
+  batch         AnchorBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  position      Int
+  eventLogId    String      @map("event_log_id")
+  eventLog      EventLog    @relation(fields: [eventLogId], references: [id])
+  leafHash      String      @map("leaf_hash")
+
+  @@index([batchId])
+  @@map("anchor_leaves")
+}
+
 model EventLog {
   id          String           @id @default(uuid())
   entityType  EventEntityType  @map("entity_type")
@@ -344,6 +384,10 @@ model EventLog {
   txHash      String? @map("tx_hash")
   blockHeight Int?    @map("block_height")
 
+  anchorBatchId String?      @map("anchor_batch_id")
+  anchorBatch   AnchorBatch? @relation(fields: [anchorBatchId], references: [id])
+  anchorLeaves  AnchorLeaf[]
+
   payload  Json
   metadata Json?
 
@@ -352,6 +396,7 @@ model EventLog {
   @@index([entityType, entityId])
   @@index([eventType])
   @@index([createdAt])
+  @@index([anchorBatchId])
   @@map("event_logs")
 }
 
